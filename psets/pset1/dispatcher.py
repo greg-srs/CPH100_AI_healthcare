@@ -7,6 +7,8 @@ import multiprocessing
 import itertools
 import sys
 
+from main import main as train_main, add_main_args as add_train_args
+
 def add_main_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(
         "--config_path",
@@ -61,11 +63,14 @@ def get_experiment_list(config: dict) -> list[dict]:
             ...
         ]
     '''
-    jobs = [{}]
+    jobs = []
+    for learn in config["learning_rate"]:
+        for batch in config["batch_size"]:
+            for reg in config["regularization_lambda"]:
+                D = {"learning_rate": learn, "batch_size": batch, "regularization_lambda": reg}
+                jobs.append(D)
 
     # TODO: Go through the tree of possible jobs and enumerate into a list of jobs
-    raise NotImplementedError("Not implemented yet")
-
     return jobs
 
 def worker(args: argparse.Namespace, job_queue: multiprocessing.Queue, done_queue: multiprocessing.Queue):
@@ -107,12 +112,36 @@ def launch_experiment(args: argparse.Namespace, experiment_config: dict) -> dict
         os.makedirs(args.log_dir)
 
     # TODO: Launch the experiment
+    l_rate = experiment_config["learning_rate"]
+    b_size = experiment_config["batch_size"]
+    reg_lambda = experiment_config["regularization_lambda"]
 
+
+     #ligns recommanded by AI, I don't understand them
+    run_args = add_train_args(argparse.ArgumentParser()).parse_args([])
+    run_args.learning_rate = l_rate
+    run_args.batch_size = b_size
+    run_args.regularization_lambda = reg_lambda
+
+
+    res = train_main(run_args)
+    auc_train = res["train_auc"]
+    auc_val = res["val_auc"]
+    loss_train = res["train_loss"]
+    loss_val = res["val_loss"]
+
+
+    results = {
+            "learning_rate": l_rate,
+            "batch_size": b_size,
+            "regularization_lambda": reg_lambda,
+            "train_auc": auc_train,
+            "val_auc": auc_val,
+            "train_loss": loss_train,
+            "val_loss": loss_val,
+        }
     # TODO: Parse the results from the experiment and return them as a dict
 
-    raise NotImplementedError("Not implemented yet")
-
-    results = {}
     return results
 
 
