@@ -28,7 +28,7 @@ def train_model(model, train_loader, val_loader, epochs=20, learning_rate=0.001,
     
     # Setup optimizer and loss function
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    criterion = None # TODO: Add your own loss function here
+    criterion = nn.CrossEntropyLoss() # TODO: Add your own loss function here
     
     # Track training history
     history = {
@@ -74,7 +74,8 @@ def train_epoch(model, train_loader, optimizer, criterion, device, max_steps=Non
     total_loss = 0
     correct = 0
     total = 0
-    
+    num_batch = 0
+
     for batch_idx, (data, target) in enumerate(tqdm(train_loader, desc="Training")):
         # Check if we've reached max steps
         if max_steps is not None and batch_idx >= max_steps:
@@ -85,14 +86,16 @@ def train_epoch(model, train_loader, optimizer, criterion, device, max_steps=Non
         # Flatten target if needed
         if target.dim() > 1:
             target = target.squeeze()
+        target = target.long()
         
         # Zero gradients
         optimizer.zero_grad()
         
         #TODO: Implement the forward pass
+        output = model(data)
 
         #TODO: Compute the loss
-        loss = 0 # TODO: Compute the loss
+        loss = criterion(output, target) # TODO: Compute the loss
 
         loss.backward()
         optimizer.step()
@@ -102,8 +105,9 @@ def train_epoch(model, train_loader, optimizer, criterion, device, max_steps=Non
         _, predicted = output.max(1)
         total += target.size(0)
         correct += predicted.eq(target).sum().item()
+        num_batch+=1
     
-    avg_loss = total_loss / len(train_loader) if len(train_loader) > 0 else 0
+    avg_loss = total_loss / num_batch if num_batch > 0 else 0
     accuracy = correct / total if total > 0 else 0
     
     return avg_loss, accuracy
@@ -127,13 +131,15 @@ def validate_epoch(model, val_loader, criterion, device):
             # Flatten target if needed
             if target.dim() > 1:
                 target = target.squeeze()
+            target = target.long()
             
             # Forward pass
             #TODO: Implement the forward pass
+            output = model(data)
 
             #TODO: Compute the loss
-            loss = 0 # TODO: Compute the loss
-            
+            loss = criterion(output, target)
+
             # Track statistics
             total_loss += loss.item()
             _, predicted = output.max(1)
